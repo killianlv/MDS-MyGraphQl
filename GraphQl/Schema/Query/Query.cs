@@ -16,18 +16,46 @@ namespace GraphQl.Schema.Query
     public class Query
     {
         static HttpClient client = new HttpClient();
-        public IEnumerable<ProductType> GetProducts()
+
+
+        public async Task<IEnumerable<ProductType>> GetProducts()
         {
-            Faker<ProductType> productsFaker = new Faker<ProductType>();
-            var products = productsFaker.Generate(5);
+            List<ProductType> products = null;
+            var path = "http://localhost:5080/api/Product";
+
+            HttpResponseMessage response = await client.GetAsync(path);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new GraphQLException(new Error("error", "error"));
+            }
+            products = await response.Content.ReadFromJsonAsync<List<ProductType>>();
+
+            foreach(var product in products)
+            {
+                if(product.Name == null || product.Name == "")
+                {
+                    var pathOpenfoodfacts = "https://world.openfoodfacts.org/api/v2/search?code=" + product.code + "&fields=code,product_name";
+                    var responseOpenfoodfact = await client.GetAsync(pathOpenfoodfacts);
+                    if (responseOpenfoodfact.IsSuccessStatusCode)
+                    {
+                        var productOpenfoodfact = await responseOpenfoodfact.Content.ReadFromJsonAsync<openfoodfactsProduct>();
+                        if (productOpenfoodfact.products.FirstOrDefault() != null)
+                        {
+                            product.Name = productOpenfoodfact.products.FirstOrDefault().product_name;
+                        }
+                    }
+                }
+            }
+
             return products;
 
         }
 
         public async Task<ProductType> GetProductByIdAsync(int id)
         {
-            var path = "http://localhost:5080/api/Product/id?id=" + id;
             ProductType product = null;
+            var path = "http://localhost:5080/api/Product/id?id=" + id;
+            
 
             HttpResponseMessage response = await client.GetAsync(path);
             if (!response.IsSuccessStatusCode)
@@ -47,7 +75,6 @@ namespace GraphQl.Schema.Query
                     {
                         product.Name = productOpenfoodfact.products.FirstOrDefault().product_name;
                     }
-                    
                 }
             }
             return product;
