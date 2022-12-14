@@ -46,9 +46,7 @@ namespace GraphQl.Schema.Query
                     }
                 }
             }
-
             return products;
-
         }
 
         public async Task<ProductType> GetProductByIdAsync(int id)
@@ -82,6 +80,7 @@ namespace GraphQl.Schema.Query
 
         public async Task<ProductType> GetProductByCodeAsync(int code)
         {
+            //TODO API
             await Task.Delay(1000);
             Faker<ProductType> productFaker = new Faker<ProductType>();
             var product = productFaker.Generate();
