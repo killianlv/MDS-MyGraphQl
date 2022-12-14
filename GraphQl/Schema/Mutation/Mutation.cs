@@ -85,9 +85,16 @@ namespace GraphQl.Schema.Mutation
             return updateProduct;
         }
 
-        public bool DeleteProduct(int Id)
+        public async Task<bool> DeleteProductAsync(int id)
         {
-            //TODO
+            var path = "http://localhost:5080/api/Product/id?id=" + id;
+
+
+            HttpResponseMessage response = await client.DeleteAsync(path);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new GraphQLException(new Error("Product not found", "404"));
+            }
             return true;
         }
     }
