@@ -9,6 +9,7 @@ using System;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Linq;
 
 namespace GraphQl.Schema.Query
 {
@@ -27,12 +28,28 @@ namespace GraphQl.Schema.Query
         {
             var path = "http://localhost:5080/api/Product/id?id=" + id;
             ProductType product = null;
+
             HttpResponseMessage response = await client.GetAsync(path);
             if (!response.IsSuccessStatusCode)
             {
                 throw new GraphQLException(new Error("Product not found", "404"));
             }
             product = await response.Content.ReadFromJsonAsync<ProductType>();
+
+            if(product.Name == null || product.Name == "")
+            {
+                var pathOpenfoodfacts = "https://world.openfoodfacts.org/api/v2/search?code="+ product.code + "&fields=code,product_name";
+                var responseOpenfoodfact = await client.GetAsync(pathOpenfoodfacts);
+                if (responseOpenfoodfact.IsSuccessStatusCode)
+                {
+                    var productOpenfoodfact = await responseOpenfoodfact.Content.ReadFromJsonAsync<openfoodfactsProduct>();
+                    if(productOpenfoodfact.products.FirstOrDefault() != null)
+                    {
+                        product.Name = productOpenfoodfact.products.FirstOrDefault().product_name;
+                    }
+                    
+                }
+            }
             return product;
         }
 
@@ -45,7 +62,6 @@ namespace GraphQl.Schema.Query
             return product;
         }
 
-        [GraphQLDeprecated("This query is deprecated.")]
-        public string Instruction => "test";
+
     }
 }
